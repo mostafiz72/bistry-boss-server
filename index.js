@@ -3,7 +3,7 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000;
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Middleware to parse JSON request bodies
 
@@ -36,6 +36,7 @@ async function run() {
         // Create a new database
         const menuCollection = client.db("bistroBoss").collection('menu');
         const reviewCollection = client.db("bistroBoss").collection('review');
+        const cartsCollection = client.db("bistroBoss").collection('carts');
 
         /// All foods data showig -------------------
 
@@ -49,6 +50,25 @@ async function run() {
        app.get('/review', async (req, res) => {
         const results = await reviewCollection.find().toArray();
         res.send(results);
+    })
+
+    //// cart collection ------------
+
+    app.get('/carts', async(req, res) => {
+        const results = await cartsCollection.find().toArray();
+        res.send(results);
+    })
+
+    app.post('/carts', async (req, res) => {
+        const cartItem = req.body;
+        const result = await cartsCollection.insertOne(cartItem);
+        res.send(result);
+    })
+    app.delete('/carts/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await cartsCollection.deleteOne(query);
+        res.send(result);
     })
 
         // Send a ping to confirm a successful connection
