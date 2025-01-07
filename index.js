@@ -37,6 +37,7 @@ async function run() {
         const menuCollection = client.db("bistroBoss").collection('menu');
         const reviewCollection = client.db("bistroBoss").collection('review');
         const cartsCollection = client.db("bistroBoss").collection('carts');
+        const userCollection = client.db("bistroBoss").collection('users');
 
         /// All foods data showig -------------------
 
@@ -64,10 +65,31 @@ async function run() {
         const result = await cartsCollection.insertOne(cartItem);
         res.send(result);
     })
+    
+     /// delete the cart collection data in db---------------
+
     app.delete('/carts/:id', async (req, res) => {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await cartsCollection.deleteOne(query);
+        res.send(result);
+    })
+     /// save the signUp user info in db ---------------
+
+    app.get('/users', async (req, res) => {
+        const result = await userCollection.find().toArray();
+        res.send(result);
+    })
+     /// save the signUp user info in db ---------------
+
+    app.post('/users', async (req, res) => {
+        const user = req.body;
+        /// jodi user login with social use kore taile amra tare check korbo -------------
+        const existingUser = await userCollection.findOne({ email: user.email });
+        if (existingUser) {
+            return res.status(400).send("Email already exists");
+        }
+        const result = await userCollection.insertOne(user);
         res.send(result);
     })
 
