@@ -40,6 +40,37 @@ async function run() {
         const cartsCollection = client.db("bistroBoss").collection('carts');
         const userCollection = client.db("bistroBoss").collection('users');
 
+        // useing the middleware in db ------------------
+
+        const verifyToken = (req, res, next) => {
+            // console.log('inside the verify token', req.headers.authorization);
+
+            if (!req.headers.authorization) {
+                return res.status(401).send("Unauthorized access");
+            }
+            const token = req.headers.authorization.split(' ')[1];
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+                if (err) return res.status(403).send("Access denied");
+                req.decoded = decoded;
+                next();
+            })
+        }
+
+        /// verify the admin info ---------------------
+
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user) {
+                isAdmin = user.role === 'admin';
+            }
+            if (!isAdmin) {
+                return res.status(403).send("Unauthorized access");
+            }
+            next();
+        }
+
         // jwt related api ---------------------------
 
         app.post('/jwt', async (req, res) => {
@@ -55,6 +86,14 @@ async function run() {
         app.get('/menu', async (req, res) => {
             const results = await menuCollection.find().toArray();
             res.send(results);
+        })
+
+        // post the new menu item ----------------
+
+        app.post("/menu", async (req, res) => {
+            const menuItem = req.body;
+            const result = await menuCollection.insertOne(menuItem);
+            res.send(result);
         })
 
         //// get the review data showing the clint side
@@ -86,48 +125,17 @@ async function run() {
             res.send(result);
         })
 
-        // useing the middleware in db ------------------
-
-        const verifyToken = (req, res, next) => {
-            // console.log('inside the verify token', req.headers.authorization);
-            
-            if (!req.headers.authorization) {
-                return res.status(401).send("Unauthorized access");
-            }
-            const token = req.headers.authorization.split(' ')[1];
-            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-                if (err) return res.status(403).send("Access denied");
-                req.decoded = decoded;
-                next();
-            })
-        }
-
-        /// verify the admin info ---------------------
-
-        const verifyAdmin = async(req, res, next) => {
-            const email = req.decoded.email;
-            const query = { email: email };
-            const user = await userCollection.findOne(query);
-            if(user) {
-                isAdmin = user.role === 'admin';
-            }
-            if (!isAdmin) {
-                return res.status(403).send("Unauthorized access");
-            }
-            next();
-        }
-
         /// verify the request user info match clint site and db ----------------
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
-            if(email !== req.decoded.email){
-               return res.status(403).send({ message: 'unauthorized access'})
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'unauthorized access' })
             }
 
-            const query = { email: email};
+            const query = { email: email };
             const user = await userCollection.findOne(query);
             let admin = false;
-            if(user) {
+            if (user) {
                 admin = user.role === 'admin';
             }
             res.send({ admin });
