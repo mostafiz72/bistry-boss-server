@@ -96,6 +96,15 @@ async function run() {
             res.send(result);
         })
 
+        /// delete the menu item ----------------
+
+        app.delete('/menu/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await menuCollection.deleteOne(query);
+            res.send(result);
+        });
+
         //// get the review data showing the clint side
 
         app.get('/review', async (req, res) => {
